@@ -264,7 +264,21 @@ export function evaluateFrames(
         : verdict === "high"
           ? "眼尾明显偏高"
           : "眼尾明显偏低";
+    // Points were selected in baseline-aligned coordinates. Undo the residual
+    // translation so endpoints belong to the actual current photograph's eye.
+    const projections: number[] = [];
+    for (let i = 0; i < points.length; i += 2)
+      projections.push((points[i] - cx) * vx + (points[i + 1] - cy) * vy);
+    const endpoint = (t: number) => ({
+      x: cx + t * vx + best.dx / ROI.scale,
+      y: cy + t * vy - best.dy / ROI.scale,
+    });
     return {
+      evidence: {
+        coordinateSystem: "after-eye-local",
+        start: endpoint(Math.min(...projections)),
+        end: endpoint(Math.max(...projections)),
+      },
       verdict,
       message,
       deviation,

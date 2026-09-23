@@ -19,6 +19,7 @@ export type VisionOutput = {
   timestamp: number;
 };
 export type Frame = {
+  sharpness?: number;
   pixels: ImageData;
   eye: Eye;
   timestamp: number;
@@ -27,6 +28,11 @@ export type Frame = {
 };
 export type Verdict = "close" | "high" | "low" | "unknown";
 export type Evaluation = {
+  evidence?: {
+    coordinateSystem: "after-eye-local";
+    start: Point;
+    end: Point;
+  };
   verdict: Verdict;
   message: string;
   reason?: string;

@@ -40,7 +40,10 @@ export default function GuideCanvas({
   mirror,
   showGuide,
   detail = false,
+  overview = false,
   illustrate = false,
+  highContrast = false,
+  opacity = 0.85,
 }: {
   video: RefObject<HTMLVideoElement | null>;
   vision: VisionOutput | null;
@@ -50,7 +53,10 @@ export default function GuideCanvas({
   mirror: boolean;
   showGuide: boolean;
   detail?: boolean;
+  overview?: boolean;
   illustrate?: boolean;
+  highContrast?: boolean;
+  opacity?: number;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -72,9 +78,10 @@ export default function GuideCanvas({
       const frame = illustrate
         ? { x: 360, y: 220 }
         : { x: vision!.width, y: vision!.height };
-      const crop = detail
-        ? eyeCrop(eye, frame)
-        : { x: 0, y: 0, width: frame.x, height: frame.y };
+      const crop =
+        detail && !overview
+          ? eyeCrop(eye, frame)
+          : { x: 0, y: 0, width: frame.x, height: frame.y };
       const project = (point: Point) =>
         projectToDisplay(
           { x: point.x - crop.x, y: point.y - crop.y },
@@ -143,7 +150,15 @@ export default function GuideCanvas({
         ctx.fill();
       }
       if (showGuide)
-        drawGuide(ctx, referencePath(eye, target), project, step, mode, detail);
+        drawGuide(
+          ctx,
+          referencePath(eye, target),
+          project,
+          step,
+          mode,
+          detail && !overview,
+          { highContrast, opacity },
+        );
     };
     draw();
     const observer = new ResizeObserver(draw);
@@ -164,14 +179,20 @@ export default function GuideCanvas({
     mirror,
     showGuide,
     detail,
+    overview,
     illustrate,
+    highContrast,
+    opacity,
   ]);
   return (
     <canvas
       ref={ref}
       className={detail ? "detail-canvas" : "guide-overlay"}
-      aria-label={detail ? "眼部放大画面" : "眼线参考路径"}
+      aria-label={
+        detail ? (overview ? "整体摄像头画面" : "眼部放大画面") : "眼线参考路径"
+      }
       data-visible={(vision?.eye || illustrate) && showGuide ? "true" : "false"}
+      data-opacity={opacity}
       data-mode={mode}
       data-step={step}
       data-source={illustrate ? "illustration" : vision?.eye ? "live" : "none"}

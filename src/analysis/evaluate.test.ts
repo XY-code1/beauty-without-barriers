@@ -27,6 +27,13 @@ describe("real OpenCV on synthetic images (not real sample acceptance)", () => {
         const result = evaluateFrames(cv, before, syntheticFrame(angle, right));
         expect(result, JSON.stringify(result)).toMatchObject({ verdict });
         expect(result.measuredAngle).toBeCloseTo(angle, 0);
+        expect(result.evidence?.coordinateSystem).toBe("after-eye-local");
+        expect(result.evidence?.start.x).toBeCloseTo(0, 1);
+        expect(result.evidence?.end.x).toBeCloseTo(0.36, 1);
+        expect(result.evidence?.end.y).toBeCloseTo(
+          0.36 * Math.tan((angle * Math.PI) / 180),
+          1,
+        );
       }
     },
   );
@@ -40,6 +47,7 @@ describe("real OpenCV on synthetic images (not real sample acceptance)", () => {
       );
       expect(result.verdict).toBe("unknown");
       expect(result.deviation).toBeUndefined();
+      expect(result.evidence).toBeUndefined();
     },
   );
   it("rejects a blurry baseline", () => {

@@ -6,6 +6,7 @@ export type Session = {
   paused: boolean;
   baseline: Frame | null;
   result: Evaluation | null;
+  currentFrame: Frame | null;
   pending: number | null;
 };
 export const initialSession: Session = {
@@ -15,6 +16,7 @@ export const initialSession: Session = {
   paused: false,
   baseline: null,
   result: null,
+  currentFrame: null,
   pending: null,
 };
 export type Action =
@@ -23,9 +25,16 @@ export type Action =
   | { type: "pause" }
   | { type: "begin"; id: number }
   | { type: "baseline"; id: number; revision: number; frame: Frame }
-  | { type: "result"; id: number; revision: number; result: Evaluation }
+  | {
+      type: "result";
+      id: number;
+      revision: number;
+      result: Evaluation;
+      frame?: Frame;
+    }
   | { type: "cancel" }
-  | { type: "next" };
+  | { type: "next" }
+  | { type: "reviewed" };
 export function sessionReducer(s: Session, action: Action): Session {
   switch (action.type) {
     case "target":
@@ -37,11 +46,17 @@ export function sessionReducer(s: Session, action: Action): Session {
     case "reset":
       return { ...initialSession, target: s.target, revision: s.revision + 1 };
     case "pause":
-      return { ...s, paused: !s.paused, pending: null, result: null };
+      return {
+        ...s,
+        paused: !s.paused,
+        pending: null,
+        result: null,
+        currentFrame: null,
+      };
     case "begin":
       return s.pending !== null || s.paused || s.step === "done"
         ? s
-        : { ...s, pending: action.id, result: null };
+        : { ...s, pending: action.id, result: null, currentFrame: null };
     case "baseline":
       if (
         s.pending !== action.id ||
@@ -55,16 +70,26 @@ export function sessionReducer(s: Session, action: Action): Session {
         step: "wing",
         pending: null,
         result: null,
+        currentFrame: null,
       };
     case "result":
       if (s.pending !== action.id || s.revision !== action.revision) return s;
-      return { ...s, pending: null, result: action.result };
+      if (action.frame && action.frame.revision !== s.revision) return s;
+      return {
+        ...s,
+        pending: null,
+        result: action.result,
+        currentFrame: action.frame ?? null,
+      };
     case "cancel":
       return { ...s, pending: null };
+    case "reviewed":
+      return { ...s, result: null, currentFrame: null };
     case "next":
       if (s.paused || s.pending !== null || !s.result) return s;
       return {
         ...s,
+        baseline: s.step === "connect" ? null : s.baseline,
         step:
           s.step === "wing"
             ? "connect"
@@ -72,6 +97,7 @@ export function sessionReducer(s: Session, action: Action): Session {
               ? "done"
               : s.step,
         result: null,
+        currentFrame: null,
       };
   }
 }

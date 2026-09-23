@@ -3,7 +3,7 @@
 - 日期：2026-09-24
 - 开发分支：`codex/v0.3-makeup-workspace`
 - 起点：GitHub `main` 的 `99ba250`，现有 v0.2 Demo
-- 状态：待执行规格；下列新增功能不表示已经完成。
+- 状态：工程实现已进入 Draft PR 交付；实际验证与真人待验收项见 `docs/v0.3-handoff.md`。以下保留批准时的规格要求。
 
 ## Problem Statement
 

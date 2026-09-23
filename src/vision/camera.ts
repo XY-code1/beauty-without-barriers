@@ -195,9 +195,55 @@ export class Camera {
         square += value * value;
         count++;
       }
-    if (square / count - (sum / count) ** 2 < 20)
+    const sharpness = square / count - (sum / count) ** 2;
+    if (!Number.isFinite(sharpness) || sharpness < 20)
       throw new Error("画面模糊，请保持稳定后重拍。");
-    return { pixels, eye, timestamp, target: { ...target }, revision };
+    return {
+      pixels,
+      eye,
+      timestamp,
+      target: { ...target },
+      revision,
+      sharpness,
+    };
+  }
+  async captureBest(
+    target: Target,
+    revision: number,
+    signal: AbortSignal,
+  ): Promise<Frame> {
+    const deadline = performance.now() + 1000;
+    let sampled = 0,
+      lastDecodedFrame = -1;
+    let best: Frame | null = null;
+    let reason = "没有新的可用画面，请保持稳定后重拍。";
+    while (sampled < 5 && performance.now() < deadline) {
+      signal.throwIfAborted();
+      if (this.closed || this.paused)
+        throw new Error("拍摄已停止，请重新开启摄像头。");
+      // Playback time may advance while the same decoded image is displayed.
+      // Without a decoded-frame counter, conservatively attempt only one image.
+      const decodedFrame =
+        this.video.getVideoPlaybackQuality?.().totalVideoFrames ?? 0;
+      if (decodedFrame !== lastDecodedFrame) {
+        lastDecodedFrame = decodedFrame;
+        sampled++;
+        try {
+          const frame = this.capture(target, revision);
+          if (!best || frame.sharpness! > best.sharpness!) best = frame;
+        } catch (error) {
+          reason = error instanceof Error ? error.message : reason;
+        }
+      }
+      if (sampled < 5)
+        await waitForCapture(
+          Math.min(30, Math.max(0, deadline - performance.now())),
+          signal,
+        );
+    }
+    signal.throwIfAborted();
+    if (!best) throw new Error(reason);
+    return best;
   }
   stop() {
     this.closed = true;
@@ -208,4 +254,20 @@ export class Camera {
     this.detector = null;
     this.video.srcObject = null;
   }
+}
+
+// Abort settles the promise as well as clearing the timer; cancelled captures retain no pending task.
+export function waitForCapture(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    signal.throwIfAborted();
+    const abort = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", abort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", abort, { once: true });
+  });
 }
