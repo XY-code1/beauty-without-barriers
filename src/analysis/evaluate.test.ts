@@ -177,6 +177,10 @@ describe("real OpenCV on synthetic images (not real sample acceptance)", () => {
         expect(result, JSON.stringify(result)).toMatchObject({
           verdict: "close",
         });
+        expect(result.evidence?.start.x).toBeCloseTo(0, 1);
+        expect(result.evidence?.start.y).toBeCloseTo(0, 1);
+        expect(result.evidence?.end.x).toBeCloseTo(0.36, 1);
+        expect(result.evidence?.end.y).toBeCloseTo(0.131, 1);
       } finally {
         source.delete();
         warped.delete();
