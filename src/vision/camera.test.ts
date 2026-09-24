@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createDetector } = vi.hoisted(() => ({ createDetector: vi.fn() }));
-vi.mock("./detector", () => ({ createDetector }));
+const { createDetector, discardDetector } = vi.hoisted(() => ({
+  createDetector: vi.fn(),
+  discardDetector: vi.fn(),
+}));
+vi.mock("./detector", () => ({ createDetector, discardDetector }));
 
 import { Camera, withTimeout } from "./camera";
 
@@ -29,6 +32,7 @@ describe("camera startup", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     createDetector.mockReset();
+    discardDetector.mockReset();
     createDetector.mockResolvedValue({
       detectForVideo: vi.fn(),
       close: vi.fn(),
@@ -103,6 +107,42 @@ describe("camera startup", () => {
       "模型加载失败",
     );
     expect(active.track.stop).toHaveBeenCalledOnce();
+  });
+
+  it("times out pending video playback and stops the stream", async () => {
+    const active = stream();
+    setGetUserMedia(vi.fn().mockResolvedValue(active.value));
+    const stalledVideo = video();
+    vi.mocked(stalledVideo.play).mockReturnValue(new Promise(() => undefined));
+    const start = new Camera(stalledVideo, vi.fn(), vi.fn()).start();
+    const rejected = expect(start).rejects.toThrow("画面播放超时");
+    await vi.advanceTimersByTimeAsync(10_000);
+    await rejected;
+    expect(active.track.stop).toHaveBeenCalledOnce();
+  });
+
+  it("rejects startup when the stream ends while the model loads", async () => {
+    let ended!: () => void;
+    const active = stream();
+    active.track.addEventListener.mockImplementation((_name, callback) => {
+      ended = callback as () => void;
+    });
+    setGetUserMedia(vi.fn().mockResolvedValue(active.value));
+    let resolveDetector!: (value: unknown) => void;
+    createDetector.mockReturnValueOnce(
+      new Promise((resolve) => (resolveDetector = resolve)),
+    );
+    const onError = vi.fn();
+    const start = new Camera(video(), vi.fn(), onError).start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(active.track.addEventListener).toHaveBeenCalledWith(
+      "ended",
+      expect.any(Function),
+    );
+    ended();
+    resolveDetector({ detectForVideo: vi.fn(), close: vi.fn() });
+    await expect(start).rejects.toThrow("摄像头连接已中断");
+    expect(onError).toHaveBeenCalledWith("摄像头连接已中断，请重新开启。");
   });
 
   it("deduplicates concurrent starts and releases tracks on stop", async () => {

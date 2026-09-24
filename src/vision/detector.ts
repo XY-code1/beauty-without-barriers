@@ -23,12 +23,23 @@ async function initializeDetector(): Promise<FaceDetector> {
 
 export function createDetector(): Promise<FaceDetector> {
   if (!detectorPromise) {
-    detectorPromise = initializeDetector().catch((error) => {
-      detectorPromise = null;
+    const attempt = initializeDetector();
+    const cached = attempt.catch((error) => {
+      if (detectorPromise === cached) detectorPromise = null;
       throw error;
     });
+    detectorPromise = cached;
   }
   return detectorPromise;
+}
+
+export function discardDetector(attempt: Promise<FaceDetector>): void {
+  if (detectorPromise !== attempt) return;
+  detectorPromise = null;
+  void attempt.then(
+    (detector) => detector.close(),
+    () => undefined,
+  );
 }
 
 export function preloadDetector(): void {

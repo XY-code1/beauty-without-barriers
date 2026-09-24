@@ -1,4 +1,4 @@
-import { createDetector, type FaceDetector } from "./detector";
+import { createDetector, discardDetector, type FaceDetector } from "./detector";
 import {
   eyeFromLandmarks,
   fromLocal,
@@ -70,8 +70,14 @@ export class Camera {
       this.video.playsInline = true;
       if (this.video.paused) {
         try {
-          await this.video.play();
-        } catch {
+          await withTimeout(
+            this.video.play(),
+            10_000,
+            "摄像头画面播放超时，请重新开启摄像头。",
+          );
+        } catch (error) {
+          if (error instanceof Error && error.message.includes("超时"))
+            throw error;
           throw new Error(
             "摄像头已打开，但浏览器无法播放画面。请重新打开页面，或改用 Safari/Chrome 后重试。",
           );
@@ -79,21 +85,24 @@ export class Camera {
       }
       this.onStage("loading-model");
       let detector: FaceDetector;
+      const detectorAttempt = createDetector();
       try {
         detector = await withTimeout(
-          createDetector(),
+          detectorAttempt,
           20_000,
           "眼部模型加载超时，请检查网络后重新加载模型。",
         );
       } catch (error) {
-        if (error instanceof Error && error.message.includes("超时"))
+        if (error instanceof Error && error.message.includes("超时")) {
+          discardDetector(detectorAttempt);
           throw error;
+        }
         throw new Error(
           "眼部模型加载失败，请检查网络或本地模型文件，然后重试。",
         );
       }
       if (this.closed) {
-        return;
+        throw new Error("摄像头连接已中断，请重新开启。");
       }
       this.detector = detector;
       this.onStage("ready");

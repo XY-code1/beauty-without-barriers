@@ -77,6 +77,7 @@ export function useCameraCapture(
       setVision,
       (message) => {
         if (cameraRef.current !== camera) return;
+        cameraRef.current = null;
         cancelRequest();
         setVision(null);
         setError(message);
