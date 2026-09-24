@@ -80,7 +80,7 @@ export function baselineIssue(cv: OpenCV, frame: Frame): string | null {
   try {
     const gray = canonical(cv, frame, own);
     return focus(cv, gray, own) < 28
-      ? "画面不够清晰，请擦净镜头、保持稳定后重拍。"
+      ? "当前照片未通过眼部清晰度检查，暂不能用于自动对照。可尝试靠近镜头、增加正面光线后重拍，或选择“仅跟随指引练习”。"
       : null;
   } finally {
     owned.reverse().forEach((m) => m.delete());

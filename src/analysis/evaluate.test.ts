@@ -51,7 +51,9 @@ describe("real OpenCV on synthetic images (not real sample acceptance)", () => {
     },
   );
   it("rejects a blurry baseline", () => {
-    expect(baselineIssue(cv, syntheticFrame("blur"))).toContain("不够清晰");
+    expect(baselineIssue(cv, syntheticFrame("blur"))).toContain(
+      "未通过眼部清晰度检查",
+    );
     expect(baselineIssue(cv, syntheticFrame("none"))).toBeNull();
   });
   it("rejects incompatible target, pose, old frame and eye closure", () => {

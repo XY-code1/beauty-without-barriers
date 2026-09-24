@@ -136,7 +136,7 @@ export default function EyelinerPractice({
     dispatch({ type: "pause" });
   }
   function requestCapture(kind: "baseline" | "check") {
-    if (busy.current) return;
+    if (busy.current || latest.current.guidanceOnly) return;
     returnFocus.current =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
@@ -643,6 +643,20 @@ export default function EyelinerPractice({
                 <p className="button-note">
                   请在画眼线前采集；已画过时需先卸除。
                 </p>
+                <button
+                  className="secondary guidance-only-entry"
+                  disabled={!visible || session.pending !== null}
+                  onClick={() => {
+                    cancelRequest();
+                    setError("");
+                    dispatch({ type: "guidance-only" });
+                  }}
+                >
+                  仅跟随指引练习
+                </button>
+                <p className="button-note">
+                  不拍照、不自动检查；完成每一步后由你自行确认。
+                </p>
               </>
             ) : session.step === "done" ? (
               <div className="completion">
@@ -658,7 +672,9 @@ export default function EyelinerPractice({
                   <p>
                     完成表示你走完了指导流程。
                     <br />
-                    本次检查仅关注眼尾方向，不评价完整妆效。
+                    {session.guidanceOnly
+                      ? "本次仅完成指引，未进行自动方向检查。"
+                      : "本次检查仅关注眼尾方向，不评价完整妆效。"}
                   </p>
                 </div>
                 <button
@@ -690,7 +706,7 @@ export default function EyelinerPractice({
                   <p className="review-note">
                     {session.step === "wing"
                       ? "放大画面中的“起”是外眼角，“收”是眼尾尖。沿箭头方向先轻画短线，再少量填充轮廓；靠近尖端时逐渐收细。"
-                      : "本步只突出眼睑外段。把两段轻轻连起来；本次检查仍只看眼尾方向，不检查粗细或连接是否连续。"}
+                      : "本步只突出眼睑外段。把两段轻轻连起来；自动检查模式也只看眼尾方向，不检查粗细或连接是否连续。"}
                   </p>
                 )}
                 {session.result && (
@@ -715,14 +731,26 @@ export default function EyelinerPractice({
                   <button className="secondary" onClick={togglePause}>
                     {session.paused ? "继续练习" : "暂停"}
                   </button>
-                  <button
-                    className="primary"
-                    disabled={!canCapture || session.pending !== null}
-                    onClick={() => requestCapture("check")}
-                  >
-                    {session.result ? "重新检查" : "检查这一步"}{" "}
-                    <span aria-hidden="true">↗</span>
-                  </button>
+                  {session.guidanceOnly ? (
+                    <button
+                      className="primary"
+                      disabled={session.paused}
+                      onClick={() => dispatch({ type: "next" })}
+                    >
+                      {session.step === "wing"
+                        ? "我已练习，继续下一步"
+                        : "我已练习，完成指引"}
+                    </button>
+                  ) : (
+                    <button
+                      className="primary"
+                      disabled={!canCapture || session.pending !== null}
+                      onClick={() => requestCapture("check")}
+                    >
+                      {session.result ? "重新检查" : "检查这一步"}{" "}
+                      <span aria-hidden="true">↗</span>
+                    </button>
+                  )}
                 </div>
                 {session.result && (
                   <button
@@ -737,7 +765,9 @@ export default function EyelinerPractice({
                   </button>
                 )}
                 <p className="button-note">
-                  每次只检查眼尾方向，结果不会自动推进步骤。
+                  {session.guidanceOnly
+                    ? "仅指引模式 · 不拍照、不自动判断画得是否正确"
+                    : "每次只检查眼尾方向，结果不会自动推进步骤。"}
                 </p>
                 <button
                   className="text-button reset"

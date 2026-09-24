@@ -4,6 +4,7 @@ export type Session = {
   revision: number;
   step: Step;
   paused: boolean;
+  guidanceOnly: boolean;
   baseline: Frame | null;
   result: Evaluation | null;
   currentFrame: Frame | null;
@@ -14,6 +15,7 @@ export const initialSession: Session = {
   revision: 0,
   step: "setup",
   paused: false,
+  guidanceOnly: false,
   baseline: null,
   result: null,
   currentFrame: null,
@@ -22,6 +24,7 @@ export const initialSession: Session = {
 export type Action =
   | { type: "target"; target: Target }
   | { type: "reset" }
+  | { type: "guidance-only" }
   | { type: "pause" }
   | { type: "begin"; id: number }
   | { type: "baseline"; id: number; revision: number; frame: Frame }
@@ -45,6 +48,15 @@ export function sessionReducer(s: Session, action: Action): Session {
       };
     case "reset":
       return { ...initialSession, target: s.target, revision: s.revision + 1 };
+    case "guidance-only":
+      if (s.step !== "setup" || s.pending !== null) return s;
+      return {
+        ...initialSession,
+        target: s.target,
+        revision: s.revision + 1,
+        step: "wing",
+        guidanceOnly: true,
+      };
     case "pause":
       return {
         ...s,
@@ -54,7 +66,10 @@ export function sessionReducer(s: Session, action: Action): Session {
         currentFrame: null,
       };
     case "begin":
-      return s.pending !== null || s.paused || s.step === "done"
+      return s.guidanceOnly ||
+        s.pending !== null ||
+        s.paused ||
+        s.step === "done"
         ? s
         : { ...s, pending: action.id, result: null, currentFrame: null };
     case "baseline":
@@ -86,7 +101,8 @@ export function sessionReducer(s: Session, action: Action): Session {
     case "reviewed":
       return { ...s, result: null, currentFrame: null };
     case "next":
-      if (s.paused || s.pending !== null || !s.result) return s;
+      if (s.paused || s.pending !== null || (!s.result && !s.guidanceOnly))
+        return s;
       return {
         ...s,
         baseline: s.step === "connect" ? null : s.baseline,
