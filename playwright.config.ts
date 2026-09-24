@@ -3,6 +3,9 @@ export default defineConfig({
   testDir: "./tests",
   timeout: 45_000,
   fullyParallel: true,
+  // OpenCV.js analysis is CPU-heavy; higher host-derived concurrency starves
+  // individual browser pages and makes their readiness checks unreliable.
+  workers: 3,
   use: {
     baseURL: "http://127.0.0.1:5173",
     trace: "retain-on-failure",

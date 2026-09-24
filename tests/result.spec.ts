@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { begin, check, installCamera, setCamera } from "./harness";
+import {
+  begin,
+  check,
+  installCamera,
+  setCamera,
+  waitForCameraReady,
+} from "./harness";
 
 test("result shows this capture and evidence, never a previous photo after failed capture", async ({
   page,
@@ -49,6 +55,7 @@ for (const side of ["left", "right"] as const) {
       await page
         .getByRole("button", { name: "开启摄像头", exact: true })
         .click();
+      await waitForCameraReady(page);
       await page.getByRole("button", { name: "确认形状，拍画前照片" }).click();
       await page.getByRole("dialog").getByRole("checkbox").check();
       await page
