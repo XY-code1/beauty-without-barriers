@@ -2,7 +2,7 @@ name: Deploy mobile demo
 
 on:
   push:
-    branches: [main, feat/mobile-demo-deployment]
+    branches: [main]
 
 permissions:
   contents: read
