@@ -5,7 +5,7 @@ test("three-second capture countdown can be cancelled without advancing", async 
   page,
 }) => {
   await installCamera(page);
-  await begin(page);
+  await begin(page, { waitForPractice: false });
   await expect(page.getByText("保持正视 · 3", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "取消，返回练习" }).click();
   await page.waitForTimeout(3500);
@@ -73,7 +73,7 @@ test("backgrounding cancels an active capture and cannot apply a late result", a
   page,
 }) => {
   await installCamera(page);
-  await begin(page);
+  await begin(page, { waitForPractice: false });
   await expect(page.getByText("保持正视 · 3", { exact: true })).toBeVisible();
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { installCamera, setCamera } from "./harness";
+import { installCamera, setCamera, waitForCameraReady } from "./harness";
 
 test("rejected photo does not trap a user who chooses guidance without analysis", async ({
   page,
@@ -10,6 +10,7 @@ test("rejected photo does not trap a user who chooses guidance without analysis"
     page.getByRole("button", { name: "仅跟随指引练习", exact: true }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "开启摄像头", exact: true }).click();
+  await waitForCameraReady(page);
   await setCamera(page, { mark: "blur" });
   await page.getByRole("button", { name: "确认形状，拍画前照片" }).click();
   await page.getByRole("dialog").getByRole("checkbox").check();

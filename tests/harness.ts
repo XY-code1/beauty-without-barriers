@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 export async function installCamera(
   page: Page,
   options: {
@@ -139,12 +139,24 @@ export async function setCamera(
     before,
   );
 }
-export async function begin(page: Page) {
+export async function begin(
+  page: Page,
+  { waitForPractice = true }: { waitForPractice?: boolean } = {},
+) {
   await page.goto("/#/eyeliner");
   await page.getByRole("button", { name: "开启摄像头" }).click();
+  await waitForCameraReady(page);
   await page.getByRole("button", { name: "确认形状，拍画前照片" }).click();
   await page.getByRole("dialog").getByRole("checkbox").check();
   await page.getByRole("button", { name: "拍画前照片", exact: true }).click();
+  if (waitForPractice)
+    await page.getByRole("heading", { name: "先画一小段眼尾" }).waitFor();
+}
+export async function waitForCameraReady(page: Page) {
+  await expect(page.getByText("眼部已定位", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "确认形状，拍画前照片" }),
+  ).toBeEnabled();
 }
 export async function check(page: Page) {
   await page.getByRole("button", { name: /^(检查这一步|重新检查)/ }).click();
