@@ -7,6 +7,7 @@
 - [当前阶段功能与技术栈](docs/current-stage-and-tech-stack.md)
 - [v0.3 规格](docs/spec-v0.3-makeup-workspace.md)
 - [v0.3 验证与交接](docs/v0.3-handoff.md)
+- [HTTPS 演示与真机验收表](docs/mobile-acceptance.md)
 
 ## v0.3：工作台与专注练习
 
