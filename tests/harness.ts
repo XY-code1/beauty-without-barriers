@@ -96,6 +96,7 @@ export async function installCamera(
       route.fulfill({
         contentType: "application/javascript",
         body: `
+    export function preloadDetector() { void createDetector().catch(() => {}); }
     export async function createDetector() {
       ${options.modelFailure ? "throw new Error('test model failure');" : ""}
       return { close() {}, detectForVideo(source) {

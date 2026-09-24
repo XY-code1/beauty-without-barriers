@@ -1,6 +1,8 @@
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 export type FaceDetector = Pick<FaceLandmarker, "detectForVideo" | "close">;
-export async function createDetector(): Promise<FaceDetector> {
+let detectorPromise: Promise<FaceDetector> | null = null;
+
+async function initializeDetector(): Promise<FaceDetector> {
   const files = await FilesetResolver.forVisionTasks(
     `${import.meta.env.BASE_URL}assets/wasm`,
   );
@@ -17,4 +19,18 @@ export async function createDetector(): Promise<FaceDetector> {
     outputFaceBlendshapes: false,
     outputFacialTransformationMatrixes: false,
   });
+}
+
+export function createDetector(): Promise<FaceDetector> {
+  if (!detectorPromise) {
+    detectorPromise = initializeDetector().catch((error) => {
+      detectorPromise = null;
+      throw error;
+    });
+  }
+  return detectorPromise;
+}
+
+export function preloadDetector(): void {
+  void createDetector().catch(() => undefined);
 }

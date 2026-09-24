@@ -53,7 +53,7 @@ test("camera refusal and model failure have a recovery entry", async ({
   await page.getByRole("button", { name: "开启摄像头" }).click();
   await expect(page.getByRole("alert")).toContainText("权限被拒绝");
   await expect(
-    page.getByRole("button", { name: "重试开启摄像头" }),
+    page.getByRole("button", { name: "重新开启摄像头" }),
   ).toBeVisible();
 });
 
@@ -63,7 +63,7 @@ test("model load failure closes camera and allows retry", async ({ page }) => {
   await page.getByRole("button", { name: "开启摄像头" }).click();
   await expect(page.getByRole("alert")).toContainText("模型加载失败");
   await expect(
-    page.getByRole("button", { name: "重试开启摄像头" }),
+    page.getByRole("button", { name: "重新开启摄像头" }),
   ).toBeVisible();
   await expect(page.getByLabel("眼线参考路径")).toHaveAttribute(
     "data-visible",
