@@ -17,6 +17,8 @@ describe("deployment asset response validation", () => {
   });
   it.each([
     new Response(null),
+    new Response(null, { headers: { "Content-Length": "20" } }),
+    new Response("", { headers: { "Content-Length": "20" } }),
     new Response(""),
     new Response("", { headers: { "Content-Length": "0" } }),
   ])("rejects empty assets", async (response) => {

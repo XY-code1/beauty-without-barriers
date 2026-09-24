@@ -5,19 +5,15 @@ import { chromium } from "@playwright/test";
 export async function verifyAssetResponse(response, url) {
   try {
     assert.equal(response.status, 200, `${url} returned ${response.status}`);
-    const length = response.headers.get("content-length");
-    if (length !== null) {
-      assert(Number(length) > 0, `${url} is empty`);
-    } else {
-      assert(response.body, `${url} is empty`);
-      const reader = response.body.getReader();
-      try {
-        const { value, done } = await reader.read();
-        assert(!done && value?.byteLength > 0, `${url} is empty`);
-      } finally {
-        await reader.cancel();
-        reader.releaseLock();
-      }
+    assert(response.body, `${url} is empty`);
+    const reader = response.body.getReader();
+    try {
+      // Fetch exposes decoded bytes; Content-Length can describe compressed data.
+      const { value, done } = await reader.read();
+      assert(!done && value?.byteLength > 0, `${url} is empty`);
+    } finally {
+      await reader.cancel();
+      reader.releaseLock();
     }
   } finally {
     if (!response.body?.locked) await response.body?.cancel();
