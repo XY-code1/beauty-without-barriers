@@ -43,6 +43,9 @@
 
 ## 执行自动化
 
+唯一官方 E2E 验收命令是 `npm run test:e2e`。它使用
+`playwright.config.ts` 中统一配置的 Worker 数量；不要通过命令行覆盖并发数。
+
 ```sh
 npm run test
 npm run test:e2e

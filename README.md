@@ -70,6 +70,9 @@ npm run dev
 
 ## 测试
 
+官方 E2E 验收命令只有 `npm run test:e2e`；Worker 数量由
+`playwright.config.ts` 统一限制，不要在本机或 CI 另加 `--workers` 参数。
+
 ```sh
 npm run test
 npx playwright install chromium
