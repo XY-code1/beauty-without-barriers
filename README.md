@@ -2,11 +2,12 @@
 
 纯前端 Demo：选择目标 → 眼部定位 → 实时参考路径 → 分段指导 → 用户点击检查 → 原始关键帧分析 → 方向反馈。
 
-**当前为 v0.3 开发分支，待本地验收后决定合并。眼线方向检查仍是实验能力，真人样本、实体手机五轮运行及三位新手试用尚未执行。**
+**v0.3 已合入 main；部署改动须通过 PR 验收后上线。眼线方向检查仍是实验能力，真人样本、实体手机五轮运行及三位新手试用尚未执行。**
 
 - [当前阶段功能与技术栈](docs/current-stage-and-tech-stack.md)
 - [v0.3 规格](docs/spec-v0.3-makeup-workspace.md)
 - [v0.3 验证与交接](docs/v0.3-handoff.md)
+- [HTTPS 演示与真机验收表](docs/mobile-acceptance.md)
 
 ## v0.3：工作台与专注练习
 
@@ -28,7 +29,7 @@ npm run dev
 
 打开终端显示的本机地址，允许摄像头。初次安装会下载官方 Face Landmarker 模型并复制 WASM / OpenCV.js 到 `public/assets/`（约 51 MB）。如果下载失败，重试 `npm run assets`。运行时从本站加载资源，不依赖公共 CDN，也没有图片上传接口。
 
-手机摄像头需要**受信任的 HTTPS**。局域网的普通 HTTP IP 地址通常只能查看页面；要用手机摄像头，请将 `npm run build` 生成的 `dist/` 放到 HTTPS 静态站点，或使用受信任的本地开发证书。电脑本机 `localhost` 可直接调试。项目未自动部署到外部服务。
+手机摄像头需要**受信任的 HTTPS**。局域网的普通 HTTP IP 地址通常只能查看页面；要用手机摄像头，请将 `npm run build` 生成的 `dist/` 放到 HTTPS 静态站点，或使用受信任的本地开发证书。电脑本机 `localhost` 可直接调试。部署工作流合入 main 后，main 更新会自动发布到 GitHub Pages；只有 Deploy mobile demo 的 build、deploy、verify 全部成功后，才进入手机验收。
 
 ## 团队协作
 
