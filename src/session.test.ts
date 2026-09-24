@@ -72,3 +72,17 @@ describe("session lifecycle", () => {
     expect(sessionReducer(refused, { type: "next" }).step).toBe("done");
   });
 });
+
+it("guidance-only progresses without fabricated results and resets to checking mode", () => {
+  let s = sessionReducer(initialSession, { type: "guidance-only" });
+  expect(s.step).toBe("wing");
+  expect(s.baseline).toBeNull();
+  expect(s.result).toBeNull();
+  expect(sessionReducer(s, { type: "begin", id: 99 }).pending).toBeNull();
+  s = sessionReducer(s, { type: "next" });
+  expect(s.step).toBe("connect");
+  s = sessionReducer(s, { type: "next" });
+  expect(s.step).toBe("done");
+  expect(s.result).toBeNull();
+  expect(sessionReducer(s, { type: "reset" }).guidanceOnly).toBe(false);
+});

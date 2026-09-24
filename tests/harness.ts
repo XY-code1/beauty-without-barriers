@@ -9,7 +9,13 @@ export async function installCamera(
 ) {
   await page.addInitScript(
     ({ denied }) => {
-      const state = { face: true, mark: "none", draws: 0 };
+      const state = {
+        face: true,
+        mark: "none",
+        draws: 0,
+        captures: 0,
+        streams: [] as MediaStream[],
+      };
       Object.assign(window, { __cameraTest: state });
       Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
         configurable: true,
@@ -21,6 +27,12 @@ export async function installCamera(
           canvas.height = 480;
           const ctx = canvas.getContext("2d")!;
           const draw = () => {
+            const mark =
+              state.mark === "mixed"
+                ? state.draws % 2
+                  ? "high"
+                  : "blur"
+                : state.mark;
             const data = ctx.createImageData(640, 480);
             for (let y = 0; y < 480; y++)
               for (let x = 0; x < 640; x++) {
@@ -37,17 +49,16 @@ export async function installCamera(
                     Math.abs(ly - 0.12 * Math.sin(-lx * Math.PI)) < 0.022
                   )
                     value = 65;
-                  const angle =
-                    state.mark === "high" ? 40 : state.mark === "low" ? 0 : 20;
+                  const angle = mark === "high" ? 40 : mark === "low" ? 0 : 20;
                   if (
-                    ["close", "high", "low"].includes(state.mark) &&
+                    ["close", "high", "low"].includes(mark) &&
                     lx >= 0 &&
                     lx <= 0.36 &&
                     Math.abs(ly - lx * Math.tan((angle * Math.PI) / 180)) < 0.02
                   )
                     value = 45;
                   if (
-                    state.mark === "occlusion" &&
+                    mark === "occlusion" &&
                     lx > -0.4 &&
                     lx < 0.6 &&
                     ly > -0.2 &&
@@ -55,7 +66,7 @@ export async function installCamera(
                   )
                     value = 105;
                 }
-                if (state.mark === "blur") value = 195;
+                if (mark === "blur") value = 195;
                 const i = (y * 640 + x) * 4;
                 data.data[i] = data.data[i + 1] = data.data[i + 2] = value;
                 data.data[i + 3] = 255;
@@ -66,9 +77,14 @@ export async function installCamera(
           draw();
           const timer = setInterval(draw, 70);
           const stream = canvas.captureStream(15);
-          stream
-            .getTracks()[0]
-            .addEventListener("ended", () => clearInterval(timer));
+          state.streams.push(stream);
+          for (const track of stream.getTracks()) {
+            const stop = track.stop.bind(track);
+            track.stop = () => {
+              clearInterval(timer);
+              stop();
+            };
+          }
           return stream;
         },
       });
@@ -82,7 +98,8 @@ export async function installCamera(
         body: `
     export async function createDetector() {
       ${options.modelFailure ? "throw new Error('test model failure');" : ""}
-      return { close() {}, detectForVideo() {
+      return { close() {}, detectForVideo(source) {
+        if (source instanceof HTMLCanvasElement) window.__cameraTest.captures++;
         if (!window.__cameraTest.face) return { faceLandmarks: [] };
         const p = Array.from({length:478}, () => ({x:.5,y:.5,z:0}));
         const set = (id,x,y) => p[id] = {x:x/640,y:y/480,z:0};
@@ -123,14 +140,14 @@ export async function setCamera(
   );
 }
 export async function begin(page: Page) {
-  await page.goto("/");
+  await page.goto("/#/eyeliner");
   await page.getByRole("button", { name: "开启摄像头" }).click();
-  await page.getByRole("button", { name: "确认路径，采集基准图" }).click();
-  await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "采集基准图", exact: true }).click();
+  await page.getByRole("button", { name: "确认形状，拍画前照片" }).click();
+  await page.getByRole("dialog").getByRole("checkbox").check();
+  await page.getByRole("button", { name: "拍画前照片", exact: true }).click();
 }
 export async function check(page: Page) {
   await page.getByRole("button", { name: /^(检查这一步|重新检查)/ }).click();
-  await page.getByRole("checkbox").check();
+  await page.getByRole("dialog").getByRole("checkbox").check();
   await page.getByRole("button", { name: "拍摄并检查" }).click();
 }

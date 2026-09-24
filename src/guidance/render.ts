@@ -11,8 +11,10 @@ export function drawGuide(
   step: Step,
   mode: GuideMode,
   labels: boolean,
+  preferences = { highContrast: false, opacity: 0.85 },
 ) {
   ctx.save();
+  ctx.globalAlpha = preferences.opacity;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   function trace(points: Point[], close = false) {
@@ -36,16 +38,17 @@ export function drawGuide(
     [path.lidOutline, full || step === "connect"],
     [path.wingOutline, full || step === "wing"],
   ] as const) {
+    if (!active) continue;
     trace(outline, true);
     ctx.fillStyle = active
       ? "rgba(198, 246, 149, .32)"
       : "rgba(246, 245, 232, .12)";
     ctx.fill();
-    ctx.strokeStyle = active ? "#d5ffa8" : "rgba(255, 255, 240, .55)";
-    ctx.lineWidth = active ? 1.5 : 1;
+    ctx.strokeStyle = preferences.highContrast ? "#ffffff" : "#d5ffa8";
+    ctx.lineWidth = preferences.highContrast ? 3 : 1.5;
     ctx.setLineDash(active ? [] : [3, 4]);
     ctx.shadowColor = "#21341c";
-    ctx.shadowBlur = 2;
+    ctx.shadowBlur = preferences.highContrast ? 5 : 2;
     ctx.stroke();
   }
   ctx.setLineDash([]);
@@ -73,9 +76,18 @@ export function drawGuide(
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#34482b";
-      ctx.fillRect(point.x - 10, point.y + 11, 20, 20);
+      const labelY =
+        ctx.canvas.height / Math.min(devicePixelRatio || 1, 3) - 26;
+      ctx.beginPath();
+      ctx.moveTo(point.x, point.y + 7);
+      ctx.lineTo(point.x, labelY);
+      ctx.strokeStyle = "#efffda";
+      ctx.setLineDash([2, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillRect(point.x - 10, labelY, 20, 20);
       ctx.fillStyle = "#f1ffdf";
-      ctx.fillText(text, point.x, point.y + 21);
+      ctx.fillText(text, point.x, labelY + 10);
     }
   }
   // A short arrow follows the middle of the active stroke, offset off the makeup.
@@ -97,7 +109,7 @@ export function drawGuide(
       size = labels ? 12 : 7;
     const tip = {
       x: middle.x + (ux * size) / 2,
-      y: middle.y - offset + (uy * size) / 2,
+      y: (labels ? 30 : middle.y - offset) + (uy * size) / 2,
     };
     ctx.strokeStyle = "#efffda";
     ctx.lineWidth = 2;

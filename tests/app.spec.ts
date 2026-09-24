@@ -49,7 +49,7 @@ test("camera refusal and model failure have a recovery entry", async ({
   page,
 }) => {
   await installCamera(page, { denied: true });
-  await page.goto("/");
+  await page.goto("/#/eyeliner");
   await page.getByRole("button", { name: "开启摄像头" }).click();
   await expect(page.getByRole("alert")).toContainText("权限被拒绝");
   await expect(
@@ -59,7 +59,7 @@ test("camera refusal and model failure have a recovery entry", async ({
 
 test("model load failure closes camera and allows retry", async ({ page }) => {
   await installCamera(page, { modelFailure: true });
-  await page.goto("/");
+  await page.goto("/#/eyeliner");
   await page.getByRole("button", { name: "开启摄像头" }).click();
   await expect(page.getByRole("alert")).toContainText("模型加载失败");
   await expect(
@@ -111,6 +111,7 @@ test("duplicate clicks and cancel prevent stale completion; side/target changes 
   await page.getByRole("button", { name: "取消，返回练习" }).click();
   await page.getByRole("button", { name: "重新选择侧别或调整路径" }).click();
   await page.getByRole("button", { name: "左眼", exact: true }).click();
+  await page.getByText("微调长度与上扬程度", { exact: true }).click();
   await page.getByLabel("上扬程度").fill("25");
   await expect(
     page.getByRole("button", { name: "左眼", exact: true }),
@@ -119,9 +120,9 @@ test("duplicate clicks and cancel prevent stale completion; side/target changes 
     page.getByRole("heading", { name: "选择你的自然眼线" }),
   ).toBeVisible();
   await expect(page.locator(".feedback")).toHaveCount(0);
-  await page.getByRole("button", { name: "确认路径，采集基准图" }).click();
+  await page.getByRole("button", { name: "确认形状，拍画前照片" }).click();
   await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "采集基准图", exact: true }).click();
+  await page.getByRole("button", { name: "拍画前照片", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "先画一小段眼尾" }),
   ).toBeVisible();
@@ -134,7 +135,7 @@ test("raw keyframe does not contain the guide, including mirror and resize", asy
   page,
 }) => {
   await installCamera(page);
-  await page.goto("/");
+  await page.goto("/#/eyeliner");
   await page.getByRole("button", { name: "开启摄像头" }).click();
   await expect(page.getByLabel("眼线参考路径")).toHaveAttribute(
     "data-visible",
@@ -159,11 +160,15 @@ test("raw keyframe does not contain the guide, including mirror and resize", asy
       (store.__rawFrames ??= []).push(data);
     });
   await saveRaw();
-  await page.getByRole("button", { name: "妆效预览", exact: true }).click();
+  await page.getByRole("button", { name: "看效果", exact: true }).click();
   await expect(page.getByLabel("眼线参考路径")).toHaveAttribute(
     "data-mode",
     "preview",
   );
+  await saveRaw();
+  await page.getByText("参考线显示设置", { exact: true }).click();
+  await page.getByLabel("高对比度参考线").check();
+  await page.getByLabel("参考线不透明度").fill("0.5");
   await saveRaw();
   await page.getByRole("button", { name: "隐藏参考线" }).click();
   await page.getByRole("button", { name: "镜像已开" }).click();
@@ -199,7 +204,7 @@ test("raw keyframe does not contain the guide, including mirror and resize", asy
 test("shape preview is explicitly an illustration before camera starts", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/eyeliner");
   const detail = page.getByLabel("眼部放大画面");
   await expect(
     page.getByText("形状示意 · 非实时", { exact: true }),
@@ -207,21 +212,22 @@ test("shape preview is explicitly an illustration before camera starts", async (
   await expect(detail).toHaveAttribute("data-source", "illustration");
   const pixels = () => detail.evaluate((c: HTMLCanvasElement) => c.toDataURL());
   const outline = await pixels();
-  await page.getByRole("button", { name: "妆效预览", exact: true }).click();
+  await page.getByRole("button", { name: "看效果", exact: true }).click();
   await expect(detail).toHaveAttribute("data-mode", "preview");
   expect(await pixels()).not.toBe(outline);
   await expect(
-    page.getByRole("button", { name: "确认路径，采集基准图" }),
+    page.getByRole("button", { name: "确认形状，拍画前照片" }),
   ).toBeDisabled();
   const originalTarget = await pixels();
+  await page.getByText("微调长度与上扬程度", { exact: true }).click();
   await page.getByLabel("眼尾长度").fill("0.45");
   expect(await pixels()).not.toBe(originalTarget);
   await page.getByRole("button", { name: "左眼", exact: true }).click();
-  await page.getByRole("button", { name: "分步轮廓", exact: true }).click();
+  await page.getByRole("button", { name: "跟着画", exact: true }).click();
   await page
     .locator(".guidance-card")
     .screenshot({ path: "test-results/v2-shape-guide.png" });
-  await page.getByRole("button", { name: "妆效预览", exact: true }).click();
+  await page.getByRole("button", { name: "看效果", exact: true }).click();
   await page
     .locator(".guidance-card")
     .screenshot({ path: "test-results/v2-shape-preview.png" });
@@ -236,12 +242,12 @@ test("live magnifier follows the current step and clears on face loss or pause",
   await expect(detail).toHaveAttribute("data-source", "live");
   await expect(detail).toHaveAttribute("data-step", "wing");
   await expect(
-    page.getByText("起：外眼角 → 收：眼尾尖", { exact: false }),
+    page.getByText("从“起”向“收”轻画短线", { exact: false }),
   ).toBeVisible();
   await page
     .locator(".guidance-card")
     .screenshot({ path: "test-results/v2-live-wing.png" });
-  await page.getByRole("button", { name: "妆效预览", exact: true }).click();
+  await page.getByRole("button", { name: "看效果", exact: true }).click();
   await setCamera(page, { mark: "close" });
   await check(page);
   await expect(
@@ -251,7 +257,7 @@ test("live magnifier follows the current step and clears on face loss or pause",
   await expect(detail).toHaveAttribute("data-mode", "guide");
   await expect(detail).toHaveAttribute("data-step", "connect");
   await expect(
-    page.getByText("起：眼睑外段 → 收：外眼角", { exact: false }),
+    page.getByText("从眼睑外段的“起”点", { exact: false }),
   ).toBeVisible();
   await page
     .locator(".guidance-card")
@@ -309,7 +315,7 @@ test("local MediaPipe WASM/model actually load and infer on an empty frame", asy
 }) => {
   test.setTimeout(90_000);
   await installCamera(page, { realModel: true });
-  await page.goto("/");
+  await page.goto("/#/eyeliner");
   await page.getByRole("button", { name: "开启摄像头" }).click();
   await expect(page.getByRole("button", { name: "关闭摄像头" })).toBeVisible({
     timeout: 60_000,
@@ -320,12 +326,12 @@ test("local MediaPipe WASM/model actually load and infer on an empty frame", asy
     "false",
   );
   await expect(
-    page.getByRole("button", { name: "确认路径，采集基准图" }),
+    page.getByRole("button", { name: "确认形状，拍画前照片" }),
   ).toBeDisabled();
 });
 
 test("mobile and desktop layout fit the viewport", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/eyeliner");
   await expect(
     page.getByRole("heading", { name: "从一条眼线，开始。" }),
   ).toBeVisible();
@@ -354,7 +360,7 @@ test("stalled video hides the old guide and recovers on fresh frames", async ({
   page,
 }) => {
   await installCamera(page);
-  await page.goto("/");
+  await page.goto("/#/eyeliner");
   await page.getByRole("button", { name: "开启摄像头" }).click();
   await expect(page.getByLabel("眼线参考路径")).toHaveAttribute(
     "data-visible",
@@ -368,7 +374,7 @@ test("stalled video hides the old guide and recovers on fresh frames", async ({
     "false",
   );
   await expect(
-    page.getByRole("button", { name: "确认路径，采集基准图" }),
+    page.getByRole("button", { name: "确认形状，拍画前照片" }),
   ).toBeDisabled();
   await page
     .locator("video")

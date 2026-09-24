@@ -1169,3 +1169,390 @@ footer p {
     transition: none !important;
   }
 }
+
+/* Makeup workspace: only modules with a working flow have an entry action. */
+.home-intro {
+  padding: 48px 0 32px;
+}
+.home-intro h1 {
+  font-family: "Songti SC", serif;
+  font-size: clamp(30px, 4vw, 46px);
+  font-weight: 500;
+  line-height: 1.25;
+  margin: 12px 0 20px;
+}
+.home-intro > p:last-child {
+  color: #53634e;
+}
+.makeup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.makeup-module {
+  border: 1px solid #d8ddcf;
+  border-radius: 22px;
+  padding: 28px;
+  background: #fffefa;
+}
+.makeup-module h2 {
+  margin: 12px 0 8px;
+  font-size: 26px;
+}
+.makeup-module p {
+  color: #53634e;
+  margin: 0 0 18px;
+}
+.makeup-module small {
+  display: block;
+  color: #586450;
+  font-size: 12px;
+}
+.makeup-module .primary {
+  display: flex;
+  text-decoration: none;
+  margin: 22px 0 14px;
+}
+.makeup-module.available {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 40px;
+  align-items: center;
+  background: #f0f2e7;
+}
+.module-art {
+  min-height: 230px;
+  display: grid;
+  place-items: center;
+  background: #e2e8d5;
+  border-radius: 140px 140px 24px 24px;
+  color: #526c48;
+}
+.module-art svg {
+  width: 65%;
+  height: auto;
+}
+.module-status {
+  font-size: 12px;
+  color: #405536;
+  border: 1px solid #acb99e;
+  border-radius: 30px;
+  padding: 4px 10px;
+}
+.upcoming {
+  background: #faf8f3;
+}
+.upcoming .module-status {
+  color: #625d55;
+  border-color: #cec7bb;
+}
+.home-note {
+  padding: 30px 0 0;
+  color: #4c5d46;
+}
+.home-note p {
+  font-size: 13px;
+  max-width: 580px;
+}
+@media (max-width: 680px) {
+  .home-intro {
+    padding: 30px 0 24px;
+  }
+  .makeup-grid {
+    gap: 12px;
+  }
+  .makeup-module {
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+  .makeup-module.available {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .module-art {
+    min-height: 135px;
+  }
+  .module-art svg {
+    width: 130px;
+  }
+  .makeup-module h2 {
+    font-size: 23px;
+  }
+  .makeup-module p {
+    font-size: 13px;
+  }
+}
+
+/* Focused practice keeps the video source mounted while showing its local crop. */
+[hidden] {
+  display: none !important;
+}
+.eye-shell .subtext,
+.eye-shell .range-hints,
+.eye-shell .button-note,
+.eye-shell .detail-legend,
+.eye-shell .instructions,
+.eye-shell .why,
+.eye-shell .camera-footnote,
+.eye-shell .slider-label span,
+.eye-shell .side-picker small,
+.eye-shell .look-selected span,
+.eye-shell .text-button,
+.eye-shell footer,
+.eye-shell .notes-row p {
+  color: #53604b;
+}
+.eye-shell button,
+.eye-shell summary {
+  min-height: 44px;
+}
+.target-details {
+  margin: 16px 0;
+}
+.target-details summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #465a3d;
+  padding: 12px 0;
+}
+.view-toggle {
+  display: block;
+  margin: 3px 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #405638;
+  font-size: 12px;
+  padding: 6px;
+}
+.practice-heading {
+  margin-bottom: 14px;
+}
+.practice-heading .eyebrow {
+  display: block;
+  color: #58684e;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+.focus-practice .intro,
+.focus-practice .steps,
+.focus-practice .notes-row,
+.focus-practice footer,
+.focus-practice .detail-heading,
+.focus-practice .detail-legend,
+.finished-practice .intro,
+.finished-practice .steps,
+.finished-practice .notes-row,
+.finished-practice .guide-modes,
+.finished-practice .detail-heading,
+.finished-practice .detail-view,
+.finished-practice .detail-legend {
+  display: none;
+}
+.focus-practice .header {
+  height: 64px;
+  border-bottom: 0;
+}
+.focus-practice .workspace,
+.finished-practice .workspace {
+  display: block;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.focus-practice .guidance-card {
+  min-height: 0;
+  padding: 20px;
+  scroll-margin: 0;
+}
+.focus-practice .detail-canvas {
+  height: clamp(180px, 28svh, 280px);
+}
+.focus-practice .instructions {
+  list-style: none;
+  padding: 0;
+  margin: 5px 0;
+  font-size: 14px;
+}
+.focus-practice .instructions li {
+  padding: 0;
+}
+.focus-practice .review-note {
+  margin: 8px 0;
+}
+.focus-practice .practice-actions {
+  margin: 8px 0 0;
+  gap: 10px;
+}
+.focus-practice .reset {
+  margin-top: 8px;
+  padding-top: 6px;
+}
+.focus-practice .button-note {
+  font-size: 11px;
+  margin-top: 8px;
+}
+.focus-practice .guide-modes {
+  margin-bottom: 8px;
+}
+.focus-practice .text-button {
+  padding: 6px 0;
+  font-size: 12px;
+}
+.focus-practice .small-pill {
+  color: #5d476d;
+}
+@media (max-width: 680px) {
+  .focus-practice {
+    padding: 0 12px 20px;
+  }
+  .focus-practice .header {
+    height: 56px;
+  }
+  .focus-practice .brand {
+    font-size: 16px;
+    gap: 7px;
+  }
+  .focus-practice .brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .focus-practice .brand small,
+  .focus-practice .edition {
+    display: none;
+  }
+  .focus-practice .guidance-card {
+    padding: 16px;
+  }
+  .focus-practice .guidance-card h2 {
+    font-size: 22px;
+  }
+  .focus-practice .practice-heading {
+    margin-bottom: 8px;
+  }
+  .focus-practice .detail-canvas {
+    height: clamp(180px, 27svh, 235px);
+  }
+  .focus-practice .practice-actions .primary {
+    font-size: 15px;
+    min-height: 48px;
+  }
+}
+.display-settings {
+  margin-top: 16px;
+  border-top: 1px solid #dee3d5;
+  color: #46593d;
+}
+.display-settings summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-size: 14px;
+}
+.display-settings label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: 14px;
+}
+.display-settings input[type="range"] {
+  flex: 1;
+  min-width: 80px;
+}
+.guide-modes button {
+  color: #4d6140;
+}
+.result-panel {
+  margin-top: 16px;
+}
+.result-panel h3 {
+  color: #28392c;
+  font-size: 22px;
+  margin: 0 0 14px;
+}
+.photo-comparison canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  background: #e0dfd7;
+}
+.photo-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  color: #354a39;
+  font-size: 13px;
+}
+.photo-missing {
+  padding: 20px;
+  background: #f1efe6;
+  border-radius: 12px;
+  color: #514738;
+}
+/* Secondary copy remains readable on the cream and tinted card surfaces. */
+.eyebrow,
+.intro-copy,
+.intro-note p,
+.intro-note span,
+.intro em,
+.steps li,
+.brand small,
+.edition > span,
+.detail-heading small,
+.look-selected span:not(.checkmark),
+.side-picker small,
+.side-picker button,
+.slider-label span,
+.range-hints,
+.why,
+.notes-row p,
+.notes-row strong,
+footer,
+.review-note,
+.next-button,
+.feedback-label,
+.feedback p,
+.feedback small,
+.completion p:not(.eyebrow),
+.capture-dialog p,
+.capture-dialog .subtext,
+.confirm-visible,
+.capture-progress {
+  color: #53604b;
+}
+.feedback strong {
+  color: #435a35;
+}
+.feedback.unknown strong {
+  color: #6d592e;
+}
+.feedback.high strong,
+.feedback.low strong {
+  color: #80533f;
+}
+.error-message {
+  color: #894223;
+}
+.capture-dialog {
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+}
+.confirm-visible {
+  min-height: 44px;
+}
+input[type="range"] {
+  min-height: 44px;
+}
+summary:focus-visible {
+  outline: 3px solid #6d587f;
+  outline-offset: 3px;
+}
+h1:focus,
+h2[tabindex]:focus,
+h3[tabindex]:focus {
+  outline: none;
+}
+.guidance-only-entry {
+  width: 100%;
+  margin-top: 14px;
+}
