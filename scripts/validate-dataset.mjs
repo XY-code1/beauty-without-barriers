@@ -1,8 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { resolve, dirname, extname } from "node:path";
+import { resolve, dirname } from "node:path";
 import { createServer } from "vite";
 import { chromium } from "@playwright/test";
 import { acceptanceSummary } from "./acceptance.mjs";
+import { parseManifest, sampleImageDataUrl } from "./dataset-input.mjs";
 
 const file = process.argv[2];
 if (!file) {
@@ -12,7 +13,7 @@ if (!file) {
   process.exit(2);
 }
 const manifestPath = resolve(file),
-  data = JSON.parse(await readFile(manifestPath, "utf8"));
+  data = parseManifest(await readFile(manifestPath, "utf8"), manifestPath);
 const samples = data.samples;
 if (!Array.isArray(samples) || !samples.length)
   throw new Error("manifest.samples must be a non-empty array");
@@ -59,13 +60,9 @@ try {
   const results = [];
   for (const sample of samples) {
     const urls = await Promise.all(
-      [sample.before, sample.after].map(async (relative) => {
-        const path = resolve(dirname(manifestPath), relative);
-        const extension = extname(path).toLowerCase();
-        if (![".png", ".jpg", ".jpeg", ".webp"].includes(extension))
-          throw new Error("Use PNG/JPG/WebP image pairs");
-        return `data:image/${extension === ".jpg" || extension === ".jpeg" ? "jpeg" : extension.slice(1)};base64,${(await readFile(path)).toString("base64")}`;
-      }),
+      ["before", "after"].map((field) =>
+        sampleImageDataUrl(manifestPath, sample, field),
+      ),
     );
     const started = performance.now();
     const output = await page.evaluate(
