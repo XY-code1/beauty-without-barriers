@@ -81,16 +81,15 @@ export function useSpeechGuidance({
 
   const toggle = useCallback(() => {
     if (!guide.current) return;
-    setEnabled((current) => {
-      guide.current!.setEnabled(!current);
-      if (!current)
-        guide.current!.announce(
-          `enabled:${session.step}:${active}:${visible}`,
-          currentGuidance(session.step, active, visible),
-        );
-      return !current;
-    });
-  }, [active, session.step, visible]);
+    const nextEnabled = !enabled;
+    setEnabled(nextEnabled);
+    guide.current.setEnabled(nextEnabled);
+    if (nextEnabled)
+      guide.current.announce(
+        `enabled:${session.step}:${active}:${visible}`,
+        currentGuidance(session.step, active, visible),
+      );
+  }, [active, enabled, session.step, visible]);
   const stop = useCallback(() => guide.current?.stop(), []);
 
   useEffect(() => {
