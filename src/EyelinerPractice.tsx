@@ -79,19 +79,23 @@ export default function EyelinerPractice({
   }, [session.result, session.step]);
 
   const inPractice = session.step === "wing" || session.step === "connect";
-  const active = cameraStatus === "on",
+  const active = cameraStatus === "ready",
     visible = active && !!vision?.eye && !session.paused;
   const canCapture = visible && !session.pending;
   const currentStep = stepIndex[session.step];
   const status = session.paused
     ? "练习已暂停"
-    : cameraStatus === "loading"
-      ? "正在准备摄像头与模型"
-      : visible
-        ? "眼部已定位"
-        : active
-          ? "请正视镜头，让脸进入画面"
-          : "摄像头尚未开启";
+    : cameraStatus === "requesting-permission"
+      ? "正在请求摄像头权限"
+      : cameraStatus === "opening-camera"
+        ? "正在启动摄像头"
+        : cameraStatus === "loading-model"
+          ? "正在加载眼部模型"
+          : visible
+            ? "眼部已定位"
+            : active
+              ? "请正视镜头，让脸进入画面"
+              : "摄像头尚未开启";
 
   return (
     <div
@@ -192,13 +196,19 @@ export default function EyelinerPractice({
                   <button
                     className="primary"
                     onClick={startCamera}
-                    disabled={cameraStatus === "loading"}
+                    disabled={
+                      cameraStatus !== "off" && cameraStatus !== "error"
+                    }
                   >
-                    {cameraStatus === "loading"
-                      ? "正在准备…"
-                      : cameraStatus === "error"
-                        ? "重试开启摄像头"
-                        : "开启摄像头"}{" "}
+                    {cameraStatus === "requesting-permission"
+                      ? "等待摄像头权限…"
+                      : cameraStatus === "opening-camera"
+                        ? "正在启动摄像头…"
+                        : cameraStatus === "loading-model"
+                          ? "正在加载眼部模型…"
+                          : cameraStatus === "error"
+                            ? "重新开启摄像头"
+                            : "开启摄像头"}{" "}
                     <span aria-hidden="true">↗</span>
                   </button>
                   <small>仅在本机处理 · 图片不会上传</small>

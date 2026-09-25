@@ -10,6 +10,8 @@ import { loadOpenCV } from "../analysis/opencv";
 import type { Action, Session } from "../session";
 import type { Target, VisionOutput } from "../types";
 import { Camera, waitForCapture } from "../vision/camera";
+import type { CameraStartupStage } from "../vision/camera";
+import { preloadDetector } from "../vision/detector";
 
 export type CaptureIntent = "baseline" | "check";
 
@@ -23,7 +25,7 @@ export function useCameraCapture(
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraRef = useRef<Camera | null>(null);
   const [cameraStatus, setCameraStatus] = useState<
-    "off" | "loading" | "on" | "error"
+    "off" | CameraStartupStage | "error"
   >("off");
   const [vision, setVision] = useState<VisionOutput | null>(null);
   const [error, setError] = useState("");
@@ -36,8 +38,7 @@ export function useCameraCapture(
 
   useEffect(() => {
     onEngagementChange(
-      cameraStatus === "loading" ||
-        cameraStatus === "on" ||
+      (cameraStatus !== "off" && cameraStatus !== "error") ||
         session.baseline !== null,
     );
     return () => onEngagementChange(false);
@@ -63,23 +64,35 @@ export function useCameraCapture(
   }
 
   async function startCamera() {
-    if (!videoRef.current || cameraStatus === "loading") return;
+    if (
+      !videoRef.current ||
+      (cameraStatus !== "off" && cameraStatus !== "error")
+    )
+      return;
     stopCamera();
     setError("");
-    setCameraStatus("loading");
-    const camera = new Camera(videoRef.current, setVision, (message) => {
-      if (cameraRef.current !== camera) return;
-      cancelRequest();
-      setVision(null);
-      setError(message);
-      setCameraStatus("error");
-      dispatch({ type: "reset" });
-    });
+    setCameraStatus("requesting-permission");
+    const camera = new Camera(
+      videoRef.current,
+      setVision,
+      (message) => {
+        if (cameraRef.current !== camera) return;
+        cameraRef.current = null;
+        cancelRequest();
+        setVision(null);
+        setError(message);
+        setCameraStatus("error");
+        dispatch({ type: "reset" });
+      },
+      (stage) => {
+        if (cameraRef.current === camera) setCameraStatus(stage);
+      },
+    );
     camera.side = latest.current.target.side;
     cameraRef.current = camera;
     try {
       await camera.start();
-      if (cameraRef.current === camera) setCameraStatus("on");
+      if (cameraRef.current === camera) setCameraStatus("ready");
     } catch (e) {
       if (cameraRef.current === camera) {
         setError(e instanceof Error ? e.message : "摄像头启动失败，请重试。");
@@ -207,6 +220,10 @@ export function useCameraCapture(
   }
 
   useEffect(() => {
+    preloadDetector();
+  }, []);
+
+  useEffect(() => {
     const hide = () => {
       if (document.hidden) {
         requestAbort.current?.abort();
@@ -215,9 +232,11 @@ export function useCameraCapture(
         setIntent(null);
         setVision(null);
         dispatch({ type: "cancel" });
-        if (cameraRef.current) cameraRef.current.paused = true;
-      } else if (cameraRef.current)
-        cameraRef.current.paused = latest.current.paused;
+        cameraRef.current?.stop();
+        cameraRef.current = null;
+        setCameraStatus("off");
+        setError("页面进入后台，摄像头已关闭。请重新开启摄像头。");
+      }
     };
     document.addEventListener("visibilitychange", hide);
     return () => {

@@ -94,9 +94,19 @@ test("backgrounding cancels an active capture and cannot apply a late result", a
     });
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await expect(
-    page.getByRole("button", { name: "确认形状，拍画前照片" }),
-  ).toBeEnabled();
+  await expect(page.getByRole("button", { name: "开启摄像头" })).toBeEnabled();
+  await expect(page.getByRole("alert")).toContainText("摄像头已关闭");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (
+          window as unknown as { __cameraTest: { streams: MediaStream[] } }
+        ).__cameraTest.streams.every((stream) =>
+          stream.getTracks().every((track) => track.readyState === "ended"),
+        ),
+      ),
+    )
+    .toBe(true);
 });
 
 test("one decoded frame is sampled once even while the playback clock advances", async ({

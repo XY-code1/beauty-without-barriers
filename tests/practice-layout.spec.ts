@@ -35,6 +35,33 @@ test("mobile practice keeps the eye, instruction and primary action together", a
   await expect(page.getByRole("button", { name: "检查这一步" })).toBeEnabled();
 });
 
+test("mobile startup exposes model failure and restores retry without enabling fake guidance", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installCamera(page, { modelFailure: true });
+  await page.goto("/#/eyeliner");
+  await page.getByRole("button", { name: "开启摄像头", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("眼部模型加载失败");
+  await expect(
+    page.getByRole("button", { name: "重新开启摄像头" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "仅跟随指引练习" }),
+  ).toBeDisabled();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (
+          window as unknown as { __cameraTest: { streams: MediaStream[] } }
+        ).__cameraTest.streams.every((stream) =>
+          stream.getTracks().every((track) => track.readyState === "ended"),
+        ),
+      ),
+    )
+    .toBe(true);
+});
+
 test("display preferences keep the captured baseline and practice step", async ({
   page,
 }) => {

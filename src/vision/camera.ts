@@ -1,4 +1,4 @@
-import { createDetector, type FaceDetector } from "./detector";
+import { createDetector, discardDetector, type FaceDetector } from "./detector";
 import {
   eyeFromLandmarks,
   fromLocal,
@@ -28,33 +28,34 @@ export class Camera {
   private lastInference = 0;
   private timestamp = 0;
   private stale = false;
+  private startPromise: Promise<void> | null = null;
   paused = false;
   side: Side = "right";
   constructor(
     private video: HTMLVideoElement,
     private onFrame: (frame: VisionOutput) => void,
     private onError: (message: string) => void,
+    private onStage: (stage: CameraStartupStage) => void = () => undefined,
   ) {}
-  async start() {
+  start(): Promise<void> {
+    if (!this.startPromise) this.startPromise = this.startInternal();
+    return this.startPromise;
+  }
+  private async startInternal() {
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       throw new Error(
         "摄像头需要 HTTPS 或本机 localhost，请使用安全地址打开。",
       );
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      });
+      this.onStage("requesting-permission");
+      const stream = await this.openStream();
       if (this.closed) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
       this.stream = stream;
+      this.onStage("opening-camera");
       stream.getVideoTracks().forEach((track) =>
         track.addEventListener("ended", () => {
           if (!this.closed) {
@@ -64,20 +65,47 @@ export class Camera {
         }),
       );
       this.video.srcObject = stream;
-      await this.video.play();
+      this.video.autoplay = true;
+      this.video.muted = true;
+      this.video.playsInline = true;
+      if (this.video.paused) {
+        try {
+          await withTimeout(
+            this.video.play(),
+            10_000,
+            "摄像头画面播放超时，请重新开启摄像头。",
+          );
+        } catch (error) {
+          if (error instanceof Error && error.message.includes("超时"))
+            throw error;
+          throw new Error(
+            "摄像头已打开，但浏览器无法播放画面。请重新打开页面，或改用 Safari/Chrome 后重试。",
+          );
+        }
+      }
+      this.onStage("loading-model");
       let detector: FaceDetector;
+      const detectorAttempt = createDetector();
       try {
-        detector = await createDetector();
-      } catch {
+        detector = await withTimeout(
+          detectorAttempt,
+          20_000,
+          "眼部模型加载超时，请检查网络后重新加载模型。",
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("超时")) {
+          discardDetector(detectorAttempt);
+          throw error;
+        }
         throw new Error(
           "眼部模型加载失败，请检查网络或本地模型文件，然后重试。",
         );
       }
       if (this.closed) {
-        detector.close();
-        return;
+        throw new Error("摄像头连接已中断，请重新开启。");
       }
       this.detector = detector;
+      this.onStage("ready");
       this.loop();
     } catch (error) {
       this.stop();
@@ -89,8 +117,61 @@ export class Camera {
         throw new Error("没有找到摄像头，请连接摄像头后重试。");
       if (error instanceof DOMException && error.name === "NotReadableError")
         throw new Error("摄像头被占用，请关闭其他正在使用它的应用后重试。");
+      if (
+        error instanceof DOMException &&
+        error.name === "OverconstrainedError"
+      )
+        throw new Error(
+          "当前设备不支持可用的摄像头画面设置，请更换浏览器后重试。",
+        );
+      if (error instanceof DOMException && error.name === "AbortError")
+        throw new Error(
+          "摄像头启动中断，请重新打开页面，或改用 Safari/Chrome 后重试。",
+        );
+      if (error instanceof DOMException && error.name === "NotSupportedError")
+        throw new Error(
+          "当前浏览器无法播放摄像头画面，请改用 Safari/Chrome 后重试。",
+        );
       throw error;
     }
+  }
+  private async openStream(): Promise<MediaStream> {
+    const choices: MediaTrackConstraints[] = [
+      {
+        facingMode: { ideal: "user" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      {
+        facingMode: { ideal: "user" },
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+      },
+      { facingMode: { ideal: "user" } },
+    ];
+    let lastError: unknown;
+    for (const video of choices) {
+      try {
+        const pending = navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video,
+        });
+        return await withTimeout(
+          pending,
+          10_000,
+          "摄像头启动超时，请重新开启摄像头。",
+          (late) => late.getTracks().forEach((track) => track.stop()),
+        );
+      } catch (error) {
+        lastError = error;
+        if (
+          !(error instanceof DOMException) ||
+          error.name !== "OverconstrainedError"
+        )
+          throw error;
+      }
+    }
+    throw lastError;
   }
   private now() {
     this.timestamp = Math.max(performance.now(), this.timestamp + 1);
@@ -250,10 +331,41 @@ export class Camera {
     cancelAnimationFrame(this.raf);
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
-    this.detector?.close();
     this.detector = null;
     this.video.srcObject = null;
   }
+}
+
+export type CameraStartupStage =
+  "requesting-permission" | "opening-camera" | "loading-model" | "ready";
+
+export function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  message: string,
+  onLate?: (value: T) => void,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      settled = true;
+      reject(new Error(message));
+    }, ms);
+    promise.then(
+      (value) => {
+        if (settled) return onLate?.(value);
+        clearTimeout(timer);
+        settled = true;
+        resolve(value);
+      },
+      (error) => {
+        if (settled) return;
+        clearTimeout(timer);
+        settled = true;
+        reject(error);
+      },
+    );
+  });
 }
 
 // Abort settles the promise as well as clearing the timer; cancelled captures retain no pending task.
