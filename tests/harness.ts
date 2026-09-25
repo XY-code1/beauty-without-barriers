@@ -155,7 +155,9 @@ export async function begin(
     await page.getByRole("heading", { name: "先画一小段眼尾" }).waitFor();
 }
 export async function waitForCameraReady(page: Page) {
-  await expect(page.getByText("眼部已定位", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".mirror-heading").getByText("眼部已定位", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "确认形状，拍画前照片" }),
   ).toBeEnabled();

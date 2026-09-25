@@ -11,6 +11,9 @@ test("mobile practice keeps the eye, instruction and primary action together", a
     page.getByRole("heading", { name: "先画一小段眼尾" }),
   ).toBeVisible();
   await expect(
+    page.getByRole("status").filter({ hasText: "眼部已定位" }),
+  ).toHaveCount(1);
+  await expect(
     page.getByRole("button", { name: "查看整体画面", exact: true }),
   ).toBeVisible();
   for (const item of [
@@ -101,6 +104,12 @@ test("320px, 200% zoom approximation and reduced motion keep core controls usabl
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  const box = await page
+    .getByRole("button", { name: "开启摄像头", exact: true })
+    .boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
   await page.addStyleTag({ content: "body { zoom: 2 }" });
   await expect(
     page.getByRole("button", { name: "开启摄像头", exact: true }),
@@ -108,12 +117,11 @@ test("320px, 200% zoom approximation and reduced motion keep core controls usabl
   await page
     .getByRole("button", { name: "开启摄像头", exact: true })
     .scrollIntoViewIfNeeded();
-  const box = await page
-    .getByRole("button", { name: "开启摄像头", exact: true })
-    .boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.width).toBeGreaterThanOrEqual(44);
-  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
   expect(
     await page.evaluate(
       () =>

@@ -13,6 +13,7 @@ export class SpeechGuide {
   constructor(
     private synthesis: Pick<SpeechSynthesis, "cancel" | "speak">,
     private makeUtterance: (text: string) => SpeechSynthesisUtterance,
+    private canSpeak: () => boolean = () => true,
   ) {}
 
   setEnabled(enabled: boolean) {
@@ -22,7 +23,7 @@ export class SpeechGuide {
   }
 
   announce(key: string, text: string) {
-    if (!this.enabled || this.lastKey === key) return;
+    if (!this.enabled || !this.canSpeak() || this.lastKey === key) return;
     this.lastKey = key;
     this.synthesis.cancel();
     this.synthesis.speak(this.makeUtterance(text));
@@ -34,12 +35,30 @@ export class SpeechGuide {
   }
 }
 
-export function createSpeechGuide(scope: SpeechScope): SpeechGuide | null {
+export function createSpeechGuide(
+  scope: SpeechScope,
+  canSpeak?: () => boolean,
+): SpeechGuide | null {
   if (!scope.speechSynthesis || !scope.SpeechSynthesisUtterance) return null;
   return new SpeechGuide(
     scope.speechSynthesis,
     (text) => new scope.SpeechSynthesisUtterance!(text),
+    canSpeak,
   );
+}
+
+export function currentGuidance(
+  step: Session["step"],
+  active: boolean,
+  visible: boolean,
+) {
+  const parts = ["语音指引已开启。"];
+  if (step === "wing") parts.push("当前步骤：画眼尾。");
+  else if (step === "connect") parts.push("当前步骤：连接外段。");
+  else if (step === "done") parts.push("练习已完成。");
+  if (active)
+    parts.push(visible ? "眼部定位成功。" : "眼部定位丢失，请正视镜头。");
+  return parts.join("");
 }
 
 export function useSpeechGuidance({
@@ -55,7 +74,7 @@ export function useSpeechGuidance({
 }) {
   const guide = useRef<SpeechGuide | null>(null);
   if (guide.current === null && typeof window !== "undefined")
-    guide.current = createSpeechGuide(window);
+    guide.current = createSpeechGuide(window, () => !document.hidden);
   const available = guide.current !== null;
   const [enabled, setEnabled] = useState(false);
   const resultSerial = useRef(0);
@@ -64,9 +83,14 @@ export function useSpeechGuidance({
     if (!guide.current) return;
     setEnabled((current) => {
       guide.current!.setEnabled(!current);
+      if (!current)
+        guide.current!.announce(
+          `enabled:${session.step}:${active}:${visible}`,
+          currentGuidance(session.step, active, visible),
+        );
       return !current;
     });
-  }, []);
+  }, [active, session.step, visible]);
   const stop = useCallback(() => guide.current?.stop(), []);
 
   useEffect(() => {

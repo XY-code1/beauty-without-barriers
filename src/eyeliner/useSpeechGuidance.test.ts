@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createSpeechGuide, SpeechGuide } from "./useSpeechGuidance";
+import {
+  createSpeechGuide,
+  currentGuidance,
+  SpeechGuide,
+} from "./useSpeechGuidance";
 
 function setup() {
   const synthesis = { cancel: vi.fn(), speak: vi.fn() };
@@ -38,5 +42,23 @@ describe("SpeechGuide", () => {
 
   it("returns no controller when the browser API is unavailable", () => {
     expect(createSpeechGuide({})).toBeNull();
+  });
+
+  it("announces the current step and eye position when enabled", () => {
+    expect(currentGuidance("wing", true, true)).toBe(
+      "语音指引已开启。当前步骤：画眼尾。眼部定位成功。",
+    );
+  });
+
+  it("does not queue speech while the page is hidden", () => {
+    const synthesis = { cancel: vi.fn(), speak: vi.fn() };
+    const guide = new SpeechGuide(
+      synthesis,
+      ((text: string) => ({ text })) as never,
+      () => false,
+    );
+    guide.setEnabled(true);
+    guide.announce("result:1", "检查结果");
+    expect(synthesis.speak).not.toHaveBeenCalled();
   });
 });

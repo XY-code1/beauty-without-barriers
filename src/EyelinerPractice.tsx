@@ -116,6 +116,14 @@ export default function EyelinerPractice({
           <i /> 眼线练习室 <span> / 01</span>
         </span>
       </header>
+      <div
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {status}
+      </div>
       <main inert={!!intent}>
         <div className="intro">
           <div>
@@ -157,7 +165,7 @@ export default function EyelinerPractice({
             hidden={inPractice || session.step === "done"}
           >
             <div className="mirror-heading">
-              <span role="status" aria-live="polite" aria-atomic="true">
+              <span>
                 <i className={visible ? "dot live" : "dot"} /> {status}
               </span>
               <span>你的{session.target.side === "right" ? "右" : "左"}眼</span>

@@ -15,7 +15,11 @@ test("enter the available eyeliner practice from the makeup workspace", async ({
   await expect(
     page.getByRole("button", { name: "开启摄像头", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("摄像头尚未开启", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .locator(".mirror-heading")
+      .getByText("摄像头尚未开启", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "返回妆容工作台" }).click();
   await expect(
     page.getByRole("heading", { name: "今天，从哪一步开始？" }),
@@ -32,11 +36,15 @@ test("leaving an active practice can be cancelled, then releases the camera on c
   await installCamera(page);
   await page.goto("/#/eyeliner");
   await page.getByRole("button", { name: "开启摄像头", exact: true }).click();
-  await expect(page.getByText("眼部已定位", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".mirror-heading").getByText("眼部已定位", { exact: true }),
+  ).toBeVisible();
   page.once("dialog", (dialog) => dialog.dismiss());
   await page.getByRole("link", { name: "返回妆容工作台" }).click();
   await expect(page).toHaveURL(/#\/eyeliner$/);
-  await expect(page.getByText("眼部已定位", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".mirror-heading").getByText("眼部已定位", { exact: true }),
+  ).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("link", { name: "返回妆容工作台" }).click();
   await expect(
@@ -54,7 +62,11 @@ test("leaving an active practice can be cancelled, then releases the camera on c
     )
     .toBe(true);
   await page.getByRole("link", { name: "开始眼线练习" }).click();
-  await expect(page.getByText("摄像头尚未开启", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .locator(".mirror-heading")
+      .getByText("摄像头尚未开启", { exact: true }),
+  ).toBeVisible();
 });
 
 test("completing a practice releases capture and a deep link cannot bypass preparation", async ({
@@ -119,5 +131,9 @@ test("three cancelled captures leave no live camera or stale result on reentry",
   await expect(
     page.getByRole("heading", { name: "选择你的自然眼线" }),
   ).toBeVisible();
-  await expect(page.getByText("摄像头尚未开启", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .locator(".mirror-heading")
+      .getByText("摄像头尚未开启", { exact: true }),
+  ).toBeVisible();
 });
