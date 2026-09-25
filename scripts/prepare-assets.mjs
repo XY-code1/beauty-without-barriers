@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, cp, readFile, writeFile, rename, rm } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
@@ -13,13 +13,12 @@ function sha256(bytes) {
 
 export async function ensureModel({
   target,
-  temporary = new URL(`${target.pathname}.tmp`, target),
+  temporary = new URL(`face-landmarker-${randomUUID()}.tmp`, target),
   fetchImpl = fetch,
   expectedSha256 = MODEL_SHA256,
   modelUrl = MODEL_URL,
+  replaceFile = replaceModel,
 }) {
-  await rm(temporary, { force: true });
-
   try {
     if (sha256(await readFile(target)) === expectedSha256) return false;
   } catch {
@@ -39,12 +38,55 @@ export async function ensureModel({
       throw new Error("Model download failed integrity verification");
 
     await writeFile(temporary, bytes);
-    await rm(target, { force: true });
-    await rename(temporary, target);
+    await replaceFile(temporary, target, expectedSha256);
     return true;
   } finally {
     await rm(temporary, { force: true });
   }
+}
+
+export async function replaceModel(
+  temporary,
+  target,
+  expectedSha256,
+  renameFile = rename,
+) {
+  try {
+    await renameFile(temporary, target);
+    return;
+  } catch (error) {
+    if (!["EEXIST", "EPERM"].includes(error.code)) throw error;
+  }
+
+  const backup = new URL(`face-landmarker-${randomUUID()}.bak`, target);
+  try {
+    await renameFile(target, backup);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    try {
+      await renameFile(temporary, target);
+      return;
+    } catch (retryError) {
+      if (sha256(await readFile(target)) === expectedSha256) return;
+      throw retryError;
+    }
+  }
+
+  try {
+    await renameFile(temporary, target);
+  } catch (error) {
+    try {
+      if (sha256(await readFile(target)) === expectedSha256) {
+        await rm(backup, { force: true });
+        return;
+      }
+    } catch {
+      // Restore the previous file below when no concurrent replacement won.
+    }
+    await renameFile(backup, target);
+    throw error;
+  }
+  await rm(backup, { force: true });
 }
 
 export async function prepareAssets() {
@@ -66,5 +108,5 @@ export async function prepareAssets() {
   console.log("Local vision assets ready.");
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href)
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
   await prepareAssets();
