@@ -37,7 +37,12 @@ function Feedback({ result }: { result: Evaluation }) {
         ? "与参考相比偏平或向下。可先局部擦除，再沿更上扬的方向重画。"
         : "在本次 10° 实验范围内；不代表粗细、连续性或整体妆效合格。";
   return (
-    <div className={`feedback ${result.verdict}`} role="status">
+    <div
+      className={`feedback ${result.verdict}`}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <span className="feedback-label">本次方向检查</span>
       <strong>{result.message}</strong>
       <p>{result.verdict === "unknown" ? result.reason : advice}</p>

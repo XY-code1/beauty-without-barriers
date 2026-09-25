@@ -80,4 +80,44 @@ test("display preferences keep the captured baseline and practice step", async (
     "data-opacity",
     "0.5",
   );
+  await expect(page.getByLabel("眼部放大画面")).toHaveAttribute(
+    "data-step",
+    "wing",
+  );
+});
+
+test("320px, 200% zoom approximation and reduced motion keep core controls usable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await installCamera(page);
+  await page.goto("/#/eyeliner");
+  await expect(
+    page.getByRole("button", { name: "开启摄像头", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.addStyleTag({ content: "body { zoom: 2 }" });
+  await expect(
+    page.getByRole("button", { name: "开启摄像头", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "开启摄像头", exact: true })
+    .scrollIntoViewIfNeeded();
+  const box = await page
+    .getByRole("button", { name: "开启摄像头", exact: true })
+    .boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(
+      () =>
+        getComputedStyle(document.querySelector(".eye-art")!).animationDuration,
+    ),
+  ).toMatch(/^(0\.01ms|1e-05s)$/);
 });

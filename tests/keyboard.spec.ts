@@ -5,6 +5,18 @@ test("keyboard can cancel capture, recover focus and complete both steps", async
   page,
 }) => {
   await installCamera(page);
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "speechSynthesis", {
+      configurable: true,
+      value: { cancel() {}, speak() {} },
+    });
+    Object.defineProperty(window, "SpeechSynthesisUtterance", {
+      configurable: true,
+      value: class {
+        constructor(public text: string) {}
+      },
+    });
+  });
   await page.goto("/");
   await page.getByRole("link", { name: "开始眼线练习" }).focus();
   await page.keyboard.press("Enter");
@@ -15,6 +27,11 @@ test("keyboard can cancel capture, recover focus and complete both steps", async
     await page.getByRole("button", { name, exact: true }).focus();
     await page.keyboard.press("Enter");
   };
+  await press("开启语音指引");
+  await expect(
+    page.getByRole("button", { name: "关闭语音指引", exact: true }),
+  ).toBeFocused();
+  await press("关闭语音指引");
   await press("开启摄像头");
   await expect(
     page.getByRole("button", { name: "确认形状，拍画前照片" }),

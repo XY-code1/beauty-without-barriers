@@ -1165,8 +1165,13 @@ footer p {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -1306,6 +1311,30 @@ footer p {
 .eye-shell button,
 .eye-shell summary {
   min-height: 44px;
+}
+.eye-shell button {
+  min-width: 44px;
+}
+.speech-toggle {
+  display: block;
+  margin: 0 0 12px auto;
+  border: 1px solid #aab79e;
+  border-radius: 999px;
+  background: #f7f8f1;
+  color: #405638;
+  padding: 8px 14px;
+}
+@media (max-width: 360px) {
+  .app-shell {
+    padding-inline: 10px;
+  }
+  .guidance-card,
+  .focus-practice .guidance-card {
+    padding-inline: 14px;
+  }
+  .steps li {
+    font-size: 9px;
+  }
 }
 .target-details {
   margin: 16px 0;

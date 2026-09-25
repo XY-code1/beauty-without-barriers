@@ -7,6 +7,7 @@ import { EyeIcon } from "./eyeliner/EyeIcon";
 import { PracticeView } from "./eyeliner/PracticeView";
 import { PreparationView } from "./eyeliner/PreparationView";
 import { useCameraCapture } from "./eyeliner/useCameraCapture";
+import { useSpeechGuidance } from "./eyeliner/useSpeechGuidance";
 export { EyeIcon } from "./eyeliner/EyeIcon";
 const steps = ["确认路径", "画眼尾", "连接外段", "完成练习"];
 const stepIndex = { setup: 0, wing: 1, connect: 2, done: 3 };
@@ -96,6 +97,7 @@ export default function EyelinerPractice({
             : active
               ? "请正视镜头，让脸进入画面"
               : "摄像头尚未开启";
+  const speech = useSpeechGuidance({ active, visible, error, session });
 
   return (
     <div
@@ -155,7 +157,7 @@ export default function EyelinerPractice({
             hidden={inPractice || session.step === "done"}
           >
             <div className="mirror-heading">
-              <span>
+              <span role="status" aria-live="polite" aria-atomic="true">
                 <i className={visible ? "dot live" : "dot"} /> {status}
               </span>
               <span>你的{session.target.side === "right" ? "右" : "左"}眼</span>
@@ -244,7 +246,16 @@ export default function EyelinerPractice({
               <button aria-pressed={mirror} onClick={() => setMirror(!mirror)}>
                 ⇄ {mirror ? "镜像已开" : "镜像已关"}
               </button>
-              {active && <button onClick={stopCamera}>关闭摄像头</button>}
+              {active && (
+                <button
+                  onClick={() => {
+                    speech.stop();
+                    stopCamera();
+                  }}
+                >
+                  关闭摄像头
+                </button>
+              )}
             </div>
             <p className="camera-footnote">
               先看整体形状，再照着放大画面的起点与方向练习。虚拟轮廓不会进入检查图像。
@@ -255,6 +266,15 @@ export default function EyelinerPractice({
             className="guidance-card"
             aria-label="练习设置与指导"
           >
+            {speech.available && (
+              <button
+                className="speech-toggle"
+                aria-pressed={speech.enabled}
+                onClick={speech.toggle}
+              >
+                {speech.enabled ? "关闭语音指引" : "开启语音指引"}
+              </button>
+            )}
             {inPractice && (
               <div className="practice-heading">
                 <span className="eyebrow">
@@ -407,7 +427,12 @@ export default function EyelinerPractice({
               </details>
             )}
             {error && (
-              <div className="error-message" role="alert">
+              <div
+                className="error-message"
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+              >
                 {error}
               </div>
             )}
