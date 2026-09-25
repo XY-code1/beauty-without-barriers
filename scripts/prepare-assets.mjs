@@ -1,5 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, cp, readFile, writeFile, rename, rm } from "node:fs/promises";
+import {
+  mkdir,
+  cp,
+  link,
+  readFile,
+  writeFile,
+  rename,
+  rm,
+} from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 const MODEL_URL =
@@ -50,6 +58,7 @@ export async function replaceModel(
   target,
   expectedSha256,
   renameFile = rename,
+  linkFile = link,
 ) {
   try {
     await renameFile(temporary, target);
@@ -81,9 +90,25 @@ export async function replaceModel(
         return;
       }
     } catch {
-      // Restore the previous file below when no concurrent replacement won.
+      // Restore below without overwriting a concurrent replacement.
     }
-    await renameFile(backup, target);
+    try {
+      await linkFile(backup, target);
+      await rm(backup, { force: true });
+    } catch (restoreError) {
+      try {
+        if (sha256(await readFile(target)) === expectedSha256) {
+          await rm(backup, { force: true });
+          return;
+        }
+      } catch {
+        // Keep the backup when neither restoration nor a peer install succeeded.
+      }
+      throw new AggregateError(
+        [error, restoreError],
+        `Model replacement failed; previous model retained at ${backup.href}`,
+      );
+    }
     throw error;
   }
   await rm(backup, { force: true });

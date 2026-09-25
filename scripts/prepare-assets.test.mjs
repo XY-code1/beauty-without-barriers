@@ -141,6 +141,45 @@ describe("ensureModel", () => {
     ]);
   });
 
+  test("does not restore a backup over a concurrent valid install", async () => {
+    const paths = await files();
+    const replacement = Buffer.from("valid concurrent model");
+    await writeFile(paths.target, "previous model");
+    await writeFile(paths.temporary, "new model");
+    let call = 0;
+    const renameFile = async (source, destination) => {
+      call += 1;
+      if (call === 1)
+        throw Object.assign(new Error("destination exists"), {
+          code: "EEXIST",
+        });
+      if (call === 3)
+        throw Object.assign(new Error("disk failure"), { code: "EIO" });
+      return rename(source, destination);
+    };
+    const linkFile = async (source, destination) => {
+      await writeFile(paths.target, replacement);
+      throw Object.assign(new Error("peer installed target"), {
+        code: "EEXIST",
+      });
+    };
+
+    await expect(
+      replaceModel(
+        paths.temporary,
+        paths.target,
+        digest(replacement),
+        renameFile,
+        linkFile,
+      ),
+    ).resolves.toBeUndefined();
+    await expect(readFile(paths.target)).resolves.toEqual(replacement);
+    expect(await readdir(new URL("./", paths.target))).toEqual([
+      "face_landmarker.task",
+      "face_landmarker.task.tmp",
+    ]);
+  });
+
   test("can be imported without process.argv[1]", async () => {
     await expect(
       execFileAsync(
